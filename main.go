@@ -19,6 +19,8 @@ var redx []byte
 
 const urlQ = "https://api.battlemetrics.com/servers/11522563/player-count-history?start=%s&stop=%s&resolution=raw"
 
+var disable bool
+
 type CountData struct {
 	Data []struct {
 		Type       string `json:"type"`
@@ -73,6 +75,20 @@ func onReady() {
 	}()
 	mGetNow.SetIcon(icon)
 
+	mDisable := systray.AddMenuItemCheckbox("Disable", "Disable the pop up window", false)
+	go func() {
+		for {
+			<-mDisable.ClickedCh
+			if mDisable.Checked() {
+				disable = false
+				mDisable.Uncheck()
+			} else {
+				disable = true
+				mDisable.Check()
+			}
+		}
+	}()
+
 	mQuit := systray.AddMenuItem("Quit", "Quit the whole app")
 
 	go func() {
@@ -88,7 +104,7 @@ func UpdatePlayerCount() {
 		data := GetPlayerCount()
 		playerCount = data.Data[0].Attributes.Value
 		systray.SetTooltip("Current Liberation Population:" + fmt.Sprintf("%d", playerCount))
-		if playerCount > 30 {
+		if playerCount > 30 && !disable {
 			dialog.Message("Current Player Count: %d", playerCount).Title("Karmakut Liberation Player Count").Info()
 		}
 		time.Sleep(time.Minute)
